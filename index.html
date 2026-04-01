@@ -2,54 +2,91 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>GeoPoly Tool v1.3 | Guillermo Diaz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoPoly Tool v1.3.1 | Guillermo Diaz</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
+        
         body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        header { background: var(--primary); color: white; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 50px; z-index: 1001; }
-        .main-container { display: flex; flex: 1; position: relative; overflow: hidden; }
+        header { 
+            background: var(--primary); color: white; padding: 0 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            height: 60px; z-index: 1100; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .main-container { display: flex; flex: 1; position: relative; overflow: hidden; background: #f0f0f0; }
 
         #map { flex: 1; z-index: 1; }
 
-        /* Paneles */
-        .sidebar { width: 280px; background: #f8f9fa; border-right: 1px solid #ddd; padding: 15px; overflow-y: auto; z-index: 1000; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
-        .sidebar-right { border-right: none; border-left: 1px solid #ddd; }
+        /* Estilo de Paneles Laterales Permanente */
+        .sidebar { 
+            width: 260px; background: #ffffff; border-right: 1px solid #ccc; 
+            padding: 15px; overflow-y: auto; z-index: 1000; 
+            display: flex; flex-direction: column;
+        }
+        
+        .sidebar-right { border-right: none; border-left: 1px solid #ccc; }
 
-        .panel-section { margin-bottom: 20px; background: white; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
-        h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .panel-section { 
+            margin-bottom: 15px; padding: 15px; border-radius: 8px; 
+            border: 1px solid #e1e4e8; background: #fcfcfc; 
+        }
 
-        input, select, button { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-size: 0.85rem; }
-        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { opacity: 0.9; }
-        .btn-export { background: var(--success); }
+        h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid var(--accent); padding-bottom: 3px; }
 
-        .coords-bar { background: #fff; border-top: 1px solid #ccc; padding: 0 15px; font-family: monospace; font-size: 0.8rem; height: 25px; display: flex; justify-content: space-between; align-items: center; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 0.9rem; }
+        
+        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        
+        .btn-export { background: var(--success); margin-top: 10px; }
+        .btn-export:hover { background: #219150; }
 
-        @media (max-width: 900px) { .sidebar { display: none; } } /* Simplificación para móvil */
+        .coords-bar { 
+            background: var(--primary); color: white; padding: 5px 20px; 
+            font-family: 'Courier New', monospace; font-size: 0.85rem; 
+            height: 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1100;
+        }
+
+        /* Ajuste para tablets/móviles: No desaparecen, se achican */
+        @media (max-width: 768px) {
+            .sidebar { width: 180px; font-size: 0.8rem; padding: 10px; }
+            h4 { font-size: 0.7rem; }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="font-weight: bold;">GeoPoly Tool <small>v1.3</small></div>
-        <div style="font-size: 0.8rem;">Guillermo Diaz | 2026</div>
+        <div><strong>GeoPoly Tool</strong> <span style="font-weight: 200;">v1.3.1</span></div>
+        <div style="text-align: right; line-height: 1.2;">
+            <span style="font-size: 0.9rem;">Guillermo Diaz</span><br>
+            <span style="font-size: 0.7rem; opacity: 0.7;">Topografía & Geometría</span>
+        </div>
     </header>
 
     <div class="main-container">
         <aside class="sidebar">
             <div class="panel-section">
-                <h4>Cálculo Punto C</h4>
-                <p style="font-size: 0.75rem; color: #666;">Selecciona dos puntos (A y B) para proyectar C.</p>
-                <label style="font-size: 0.7rem;">Distancia desde A (m)</label>
-                <input type="number" id="distX" value="10" step="0.1">
-                <button onclick="calculatePointC()">Generar Punto C</button>
-                <div id="geom-status" style="font-size: 0.75rem; color: var(--danger);"></div>
+                <h4>Proyección de Punto C</h4>
+                <p style="font-size: 0.75rem; color: #666; margin-bottom: 10px;">
+                    1. Use el marcador (pin) para situar <b>A</b> y luego <b>B</b>.<br>
+                    2. Indique la distancia.
+                </p>
+                <label style="font-size: 0.75rem;">Distancia A -> C (m):</label>
+                <input type="number" id="distX" value="10" step="0.01">
+                <button onclick="calculatePointC()">CALCULAR PUNTO C</button>
+                <div id="geom-status" style="font-size: 0.75rem; color: var(--danger); margin-top: 5px;"></div>
+            </div>
+            
+            <div class="panel-section">
+                <h4>Ayuda</h4>
+                <p style="font-size: 0.7rem; color: #888;">El punto C se genera siguiendo la trayectoria exacta de la recta que une A con B.</p>
             </div>
         </aside>
 
@@ -57,28 +94,30 @@
 
         <aside class="sidebar sidebar-right">
             <div class="panel-section">
-                <h4>Mapa Base</h4>
+                <h4>Visualización</h4>
                 <select onchange="changeLayer(this.value)">
                     <option value="satelite">Satélite (Esri)</option>
                     <option value="callejero">Callejero (OSM)</option>
+                    <option value="relieve">Relieve Terreno</option>
                 </select>
             </div>
 
             <div class="panel-section">
-                <h4>Importar Emlid CSV</h4>
+                <h4>Emlid RS2 (CSV)</h4>
                 <input type="file" id="csvFile" accept=".csv">
-                <button onclick="importCSV()">Cargar Puntos</button>
+                <button onclick="importCSV()">CARGAR PUNTOS</button>
+                <div id="csv-info" style="font-size: 0.7rem; margin-top:5px; color: #555;"></div>
             </div>
 
-            <div class="panel-section">
-                <button class="btn-export" onclick="exportToKML()">Exportar KML</button>
+            <div class="panel-section" style="border: none; background: transparent;">
+                <button class="btn-export" onclick="exportToKML()">EXPORTAR TODO (.KML)</button>
             </div>
         </aside>
     </div>
 
     <div class="coords-bar">
-        <div id="mouse-coords">Lat: 0.000000 | Lng: 0.000000</div>
-        <div id="status-msg">Listo</div>
+        <div id="mouse-coords">Cursor WGS84: 0.000000, 0.000000</div>
+        <div id="status-msg">Sistema Iniciado</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -87,33 +126,33 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
     <script>
-        const layers = {
+        const baseLayers = {
             satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
-            callejero: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+            callejero: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+            relieve: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}')
         };
 
-        const map = L.map('map', { center: [-32.95, -60.75], zoom: 15, layers: [layers.satelite] });
+        const map = L.map('map', { center: [-32.95, -60.75], zoom: 15, layers: [baseLayers.satelite] });
         const drawnItems = new L.FeatureGroup().addTo(map);
         const emlidLayer = new L.FeatureGroup().addTo(map);
 
         map.pm.addControls({ position: 'topleft', drawMarker: true, drawPolygon: true, removalMode: true });
 
         function changeLayer(v) { 
-            map.removeLayer(layers.satelite); map.removeLayer(layers.callejero);
-            layers[v].addTo(map); 
+            Object.values(baseLayers).forEach(l => map.removeLayer(l));
+            baseLayers[v].addTo(map); 
         }
 
         // --- IMPORTAR CSV EMLID ---
         function importCSV() {
             const fileInput = document.getElementById('csvFile');
-            if (!fileInput.files[0]) return alert("Selecciona un archivo CSV");
+            if (!fileInput.files[0]) return alert("Por favor, selecciona un archivo CSV de Emlid.");
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const lines = e.target.result.split('\n');
                 const headers = lines[0].toLowerCase().split(',');
                 
-                // Mapeo de columnas comunes en Emlid
                 const idx = {
                     lat: headers.indexOf('latitude'),
                     lng: headers.indexOf('longitude'),
@@ -121,6 +160,7 @@
                     sol: headers.indexOf('solution status')
                 };
 
+                let count = 0;
                 lines.slice(1).forEach(line => {
                     const col = line.split(',');
                     if (col.length < 3) return;
@@ -128,22 +168,20 @@
                     const lat = parseFloat(col[idx.lat]);
                     const lng = parseFloat(col[idx.lng]);
                     const status = col[idx.sol] ? col[idx.sol].trim().toLowerCase() : 'unknown';
-                    const color = status.includes('fix') ? 'green' : 'red';
+                    const color = status.includes('fix') ? '#27ae60' : '#e74c3c';
 
-                    if (!isNaN(lat)) {
+                    if (!isNaN(lat) && !isNaN(lng)) {
                         const marker = L.circleMarker([lat, lng], {
-                            radius: 6,
-                            fillColor: color,
-                            color: "#fff",
-                            weight: 2,
-                            fillOpacity: 0.9
+                            radius: 5, fillColor: color, color: "#fff", weight: 1, fillOpacity: 1
                         }).addTo(emlidLayer);
                         
-                        marker.bindPopup(`<b>Nombre:</b> ${col[idx.name]}<br><b>Estado:</b> ${status}`);
+                        marker.bindPopup(`<b>Punto:</b> ${col[idx.name]}<br><b>Estado:</b> ${status.toUpperCase()}`);
+                        count++;
                     }
                 });
-                map.fitBounds(emlidLayer.getBounds());
-                document.getElementById('status-msg').innerText = "CSV Cargado";
+                if(count > 0) map.fitBounds(emlidLayer.getBounds());
+                document.getElementById('csv-info').innerText = `Cargados ${count} puntos.`;
+                document.getElementById('status-msg').innerText = "Importación exitosa.";
             };
             reader.readAsText(fileInput.files[0]);
         }
@@ -151,45 +189,49 @@
         // --- CÁLCULO GEOMÉTRICO PUNTO C ---
         function calculatePointC() {
             const markers = [];
-            map.eachLayer(l => { if (l instanceof L.Marker && l.options.draggable) markers.push(l); });
+            // Buscamos marcadores creados con la herramienta de dibujo
+            map.eachLayer(l => { 
+                if (l instanceof L.Marker && l.options.icon.options.className !== 'custom-div-icon') {
+                    markers.push(l);
+                } 
+            });
 
             if (markers.length < 2) {
-                document.getElementById('geom-status').innerText = "Crea 2 marcadores (A y B) con la herramienta de la izquierda.";
+                document.getElementById('geom-status').innerText = "Faltan puntos. Coloque A y B en el mapa.";
                 return;
             }
 
-            const dist = parseFloat(document.getElementById('distX').value);
-            const pA = markers[0].getLatLng();
-            const pB = markers[1].getLatLng();
+            // Usamos los dos últimos marcadores colocados como A y B
+            const pA = markers[markers.length - 2].getLatLng();
+            const pB = markers[markers.length - 1].getLatLng();
+            const distMeters = parseFloat(document.getElementById('distX').value);
 
-            // Convertir a GeoJSON para usar Turf (Precisión métrica)
             const ptA = turf.point([pA.lng, pA.lat]);
             const ptB = turf.point([pB.lng, pB.lat]);
             
             const bearing = turf.bearing(ptA, ptB);
-            const destination = turf.destination(ptA, dist / 1000, bearing, {units: 'kilometers'});
+            const destination = turf.destination(ptA, distMeters / 1000, bearing, {units: 'kilometers'});
 
-            const pC = L.marker([destination.geometry.coordinates[1], destination.geometry.coordinates[0]], {
-                icon: L.divIcon({ className: 'custom-div-icon', html: "<div style='background:orange; width:12px; height:12px; border-radius:50%; border:2px solid white;'></div>" })
+            const pC = L.circleMarker([destination.geometry.coordinates[1], destination.geometry.coordinates[0]], {
+                radius: 7, fillColor: 'orange', color: 'black', weight: 2, fillOpacity: 1
             }).addTo(drawnItems);
             
-            pC.bindPopup(`Punto C (a ${dist}m de A en dirección B)`).openPopup();
-            document.getElementById('geom-status').innerText = "";
+            pC.bindPopup(`<b>Punto C</b><br>Distancia: ${distMeters}m de A`).openPopup();
+            document.getElementById('geom-status').innerText = "Punto C proyectado.";
+            document.getElementById('status-msg').innerText = "Cálculo realizado.";
         }
 
-        // --- EXPORTAR ---
         function exportToKML() {
-            const all = new L.FeatureGroup([drawnItems, emlidLayer]);
-            const data = all.toGeoJSON();
-            const kml = tokml(data);
+            const tempGroup = new L.FeatureGroup([drawnItems, emlidLayer]);
+            const kml = tokml(tempGroup.toGeoJSON());
             const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'Relevamiento_Guillermo.kml'; a.click();
+            a.href = url; a.download = 'Export_GeoPoly.kml'; a.click();
         }
 
         map.on('mousemove', (e) => {
-            document.getElementById('mouse-coords').innerText = `Lat: ${e.latlng.lat.toFixed(6)} | Lng: ${e.latlng.lng.toFixed(6)}`;
+            document.getElementById('mouse-coords').innerText = `Cursor WGS84: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
         });
     </script>
 </body>
