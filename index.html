@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeoPoly Tool v1.4 | Selector Interactivo</title>
+    <title>GeoPoly Tool v1.5 | Exportador CSV</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     
     <style>
-        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --selection: #f39c12; }
+        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --selection: #f39c12; --csv: #9b59b6; }
         body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        .sidebar { width: 240px; background: var(--primary); color: #ecf0f1; display: flex; flex-direction: column; z-index: 1000; }
+        .sidebar { width: 240px; background: var(--primary); color: #ecf0f1; display: flex; flex-direction: column; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
         .sidebar-header { padding: 15px; background: #2c3e50; border-bottom: 1px solid #34495e; }
         .sidebar-header h1 { margin: 0; font-size: 1rem; }
 
@@ -22,52 +22,59 @@
         .section-body { padding: 10px; }
 
         input, select, button { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 3px; border: none; font-size: 0.8rem; box-sizing: border-box; }
-        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.8; }
         
-        /* Estilos específicos para selección */
         .btn-select { background: #7f8c8d; font-size: 0.7rem; }
         .btn-select.active { background: var(--selection); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        .point-label { font-size: 0.7rem; color: #bdc3c7; margin-bottom: 10px; display: block; background: #1a252f; padding: 5px; border-radius: 3px; min-height: 15px; }
+        .point-label { font-size: 0.7rem; color: #bdc3c7; margin-bottom: 10px; display: block; background: #1a252f; padding: 5px; border-radius: 3px; min-height: 15px; overflow: hidden; text-overflow: ellipsis; }
         
         #map { flex: 1; position: relative; }
-        .coords-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.75rem; z-index: 1000; }
+        .coords-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; z-index: 1000; }
+        
+        .export-group { margin-top: 15px; padding-top: 15px; border-top: 1px solid #34495e; }
+        .btn-csv { background: var(--csv); }
+        .btn-kml { background: #e67e22; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1>GeoPoly Tool <small>v1.4</small></h1>
+            <h1>GeoPoly Tool <small>v1.5</small></h1>
         </div>
 
         <div class="content">
             <details open>
-                <summary>📐 Proyectar Punto C</summary>
+                <summary>📐 Geometría (A-B-C)</summary>
                 <div class="section-body">
-                    <button id="btnA" class="btn-select" onclick="startSelection('A')">SELECCIONAR PUNTO A</button>
-                    <span id="labelA" class="point-label">A: No seleccionado</span>
+                    <button id="btnA" class="btn-select" onclick="startSelection('A')">DESIGNAR PUNTO A</button>
+                    <span id="labelA" class="point-label">A: Vacío</span>
                     
-                    <button id="btnB" class="btn-select" onclick="startSelection('B')">SELECCIONAR PUNTO B</button>
-                    <span id="labelB" class="point-label">B: No seleccionado</span>
+                    <button id="btnB" class="btn-select" onclick="startSelection('B')">DESIGNAR PUNTO B</button>
+                    <span id="labelB" class="point-label">B: Vacío</span>
 
-                    <label style="font-size: 0.7rem;">Distancia A->C (m)</label>
-                    <input type="number" id="distX" value="10" step="0.1">
+                    <label style="font-size: 0.7rem;">Distancia (m) desde A:</label>
+                    <input type="number" id="distX" value="10" step="0.01">
                     
-                    <button style="background: var(--success);" onclick="calculatePointC()">GENERAR PUNTO C</button>
+                    <button style="background: var(--success);" onclick="calculatePointC()">CALCULAR C</button>
                 </div>
             </details>
 
             <details>
-                <summary>🛰️ Emlid RS2 (CSV)</summary>
+                <summary>🛰️ Emlid RS2 (Importar)</summary>
                 <div class="section-body">
                     <input type="file" id="csvFile" accept=".csv">
                     <button onclick="importCSV()">CARGAR CSV</button>
                 </div>
             </details>
 
-            <button style="margin-top:20px; background:#e67e22;" onclick="exportToKML()">📦 EXPORTAR KML</button>
+            <div class="export-group">
+                <button class="btn-csv" onclick="exportToCSV()">💾 EXPORTAR CSV (Puntos)</button>
+                <button class="btn-kml" onclick="exportToKML()">📦 EXPORTAR KML (Todo)</button>
+            </div>
         </div>
     </aside>
 
@@ -88,7 +95,6 @@
 
         map.pm.addControls({ position: 'topleft', drawMarker: true, drawPolygon: true, removalMode: true });
 
-        // Variables de estado para la selección
         let selectingFor = null;
         let pointA = null;
         let pointB = null;
@@ -98,36 +104,24 @@
             document.getElementById('btnA').classList.remove('active');
             document.getElementById('btnB').classList.remove('active');
             document.getElementById('btn' + target).classList.add('active');
-            document.getElementById('map').style.cursor = 'crosshair';
         }
 
-        // Manejador de clics en el mapa y elementos
-        map.on('click', function(e) {
-            if (!selectingFor) return;
-            // Si el usuario hace clic en el mapa vacío, no hacemos nada o avisamos
-            alert("Por favor, haz clic directamente sobre un punto existente (CSV o marcador).");
-        });
-
-        // Función para asignar el punto seleccionado
         function assignPoint(latlng, name) {
             if (selectingFor === 'A') {
                 pointA = latlng;
-                document.getElementById('labelA').innerText = `A: ${name || 'Punto Seleccionado'}`;
-            } else if (selectingFor === 'B') {
+                document.getElementById('labelA').innerText = `A: ${name}`;
+            } else {
                 pointB = latlng;
-                document.getElementById('labelB').innerText = `B: ${name || 'Punto Seleccionado'}`;
+                document.getElementById('labelB').innerText = `B: ${name}`;
             }
-            
             document.getElementById('btn' + selectingFor).classList.remove('active');
             selectingFor = null;
-            document.getElementById('map').style.cursor = '';
         }
 
-        // Modificamos la creación de elementos para que sean "seleccionables"
         function makeSelectable(layer, name) {
             layer.on('click', function(e) {
                 if (selectingFor) {
-                    L.DomEvent.stopPropagation(e); // Evita que el clic pase al mapa
+                    L.DomEvent.stopPropagation(e);
                     assignPoint(e.target.getLatLng(), name);
                 }
             });
@@ -135,7 +129,9 @@
 
         map.on('pm:create', (e) => {
             drawnItems.addLayer(e.layer);
-            makeSelectable(e.layer, "Dibujo " + e.shape);
+            const name = e.shape === 'Marker' ? `Punto_${Math.floor(Math.random()*1000)}` : `Dibujo_${e.shape}`;
+            makeSelectable(e.layer, name);
+            if(e.shape === 'Marker') e.layer.options.name = name; // Guardamos el nombre para el CSV
         });
 
         function importCSV() {
@@ -151,11 +147,12 @@
                     const col = line.split(',');
                     if (col.length < 3) return;
                     const lat = parseFloat(col[idx.lat]), lng = parseFloat(col[idx.lng]);
-                    const pName = col[idx.name] || 'Punto CSV';
+                    const pName = (col[idx.name] || 'Punto_RS2').trim();
                     if (!isNaN(lat)) {
                         const m = L.circleMarker([lat, lng], { radius: 5, fillColor: '#2ecc71', color: '#fff', weight: 1, fillOpacity: 1 }).addTo(emlidLayer);
+                        m.options.name = pName; // Metadata para exportar
                         m.bindPopup("Pt: " + pName);
-                        makeSelectable(m, pName); // HACER SELECCIONABLE
+                        makeSelectable(m, pName);
                     }
                 });
                 map.fitBounds(emlidLayer.getBounds());
@@ -164,20 +161,49 @@
         }
 
         function calculatePointC() {
-            if (!pointA || !pointB) return alert("Debes seleccionar primero el Punto A y el Punto B.");
-            
+            if (!pointA || !pointB) return alert("Selecciona A y B primero.");
             const dist = parseFloat(document.getElementById('distX').value);
-            const ptA = turf.point([pointA.lng, pointA.lat]);
-            const ptB = turf.point([pointB.lng, pointB.lat]);
-            
-            const bearing = turf.bearing(ptA, ptB);
-            const dest = turf.destination(ptA, dist / 1000, bearing, {units: 'kilometers'});
+            const bearing = turf.bearing(turf.point([pointA.lng, pointA.lat]), turf.point([pointB.lng, pointB.lat]));
+            const dest = turf.destination(turf.point([pointA.lng, pointA.lat]), dist / 1000, bearing, {units: 'kilometers'});
 
+            const nameC = `C_${dist}m_de_A`;
             const pC = L.circleMarker([dest.geometry.coordinates[1], dest.geometry.coordinates[0]], {
                 radius: 6, fillColor: '#f39c12', color: '#fff', weight: 2, fillOpacity: 1
             }).addTo(drawnItems);
             
-            pC.bindPopup(`Punto C: ${dist}m de A en línea con B`).openPopup();
+            pC.options.name = nameC;
+            pC.bindPopup(`Punto C: ${dist}m de A`).openPopup();
+            makeSelectable(pC, nameC);
+        }
+
+        // --- NUEVA FUNCIÓN: EXPORTAR A CSV ---
+        function exportToCSV() {
+            let csvRows = ["Name,Latitude,Longitude"];
+            
+            // Recorremos ambas capas buscando marcadores o circleMarkers (puntos)
+            const allLayers = [drawnItems, emlidLayer];
+            
+            allLayers.forEach(group => {
+                group.eachLayer(layer => {
+                    // Verificamos que sea un punto (Marker o CircleMarker)
+                    if (layer.getLatLng) {
+                        const lat = layer.getLatLng().lat.toFixed(8);
+                        const lng = layer.getLatLng().lng.toFixed(8);
+                        const name = layer.options.name || "Sin_Nombre";
+                        csvRows.push(`${name},${lat},${lng}`);
+                    }
+                });
+            });
+
+            if (csvRows.length === 1) return alert("No hay puntos en el mapa para exportar.");
+
+            const csvString = csvRows.join("\n");
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Puntos_GeoPoly_${new Date().getTime()}.csv`);
+            link.click();
         }
 
         function exportToKML() {
