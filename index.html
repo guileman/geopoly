@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeoPoly Tool v1.5 | Exportador CSV</title>
+    <title>GeoPoly Tool v1.5.1 | Formato Emlid</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
@@ -14,57 +14,56 @@
         
         .sidebar { width: 240px; background: var(--primary); color: #ecf0f1; display: flex; flex-direction: column; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
         .sidebar-header { padding: 15px; background: #2c3e50; border-bottom: 1px solid #34495e; }
-        .sidebar-header h1 { margin: 0; font-size: 1rem; }
+        .sidebar-header h1 { margin: 0; font-size: 0.9rem; letter-spacing: 1px; }
 
         .content { flex: 1; overflow-y: auto; padding: 10px; }
-        details { background: #2c3e50; margin-bottom: 8px; border-radius: 4px; }
-        summary { padding: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer; background: #34495e; }
+        details { background: #2c3e50; margin-bottom: 8px; border-radius: 4px; border: 1px solid #34495e; }
+        summary { padding: 10px; font-size: 0.7rem; font-weight: bold; cursor: pointer; background: #34495e; text-transform: uppercase; }
         .section-body { padding: 10px; }
 
+        label { display: block; font-size: 0.65rem; margin-bottom: 4px; color: #95a5a6; }
         input, select, button { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 3px; border: none; font-size: 0.8rem; box-sizing: border-box; }
-        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; }
         
         .btn-select { background: #7f8c8d; font-size: 0.7rem; }
         .btn-select.active { background: var(--selection); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        .point-label { font-size: 0.7rem; color: #bdc3c7; margin-bottom: 10px; display: block; background: #1a252f; padding: 5px; border-radius: 3px; min-height: 15px; overflow: hidden; text-overflow: ellipsis; }
+        .point-label { font-size: 0.7rem; color: #bdc3c7; margin-bottom: 10px; display: block; background: #1a252f; padding: 5px; border-radius: 3px; min-height: 15px; }
         
         #map { flex: 1; position: relative; }
         .coords-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; z-index: 1000; }
         
-        .export-group { margin-top: 15px; padding-top: 15px; border-top: 1px solid #34495e; }
+        .export-group { margin-top: 10px; padding: 10px; border-top: 1px solid #34495e; }
         .btn-csv { background: var(--csv); }
-        .btn-kml { background: #e67e22; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1>GeoPoly Tool <small>v1.5</small></h1>
+            <h1>GeoPoly Tool <small>v1.5.1</small></h1>
         </div>
 
         <div class="content">
             <details open>
-                <summary>📐 Geometría (A-B-C)</summary>
+                <summary>📐 Geometría A-B-C</summary>
                 <div class="section-body">
                     <button id="btnA" class="btn-select" onclick="startSelection('A')">DESIGNAR PUNTO A</button>
-                    <span id="labelA" class="point-label">A: Vacío</span>
+                    <span id="labelA" class="point-label">A: Sin selección</span>
                     
                     <button id="btnB" class="btn-select" onclick="startSelection('B')">DESIGNAR PUNTO B</button>
-                    <span id="labelB" class="point-label">B: Vacío</span>
+                    <span id="labelB" class="point-label">B: Sin selección</span>
 
-                    <label style="font-size: 0.7rem;">Distancia (m) desde A:</label>
-                    <input type="number" id="distX" value="10" step="0.01">
+                    <label>Distancia desde A (m):</label>
+                    <input type="number" id="distX" value="10" step="0.001">
                     
                     <button style="background: var(--success);" onclick="calculatePointC()">CALCULAR C</button>
                 </div>
             </details>
 
             <details>
-                <summary>🛰️ Emlid RS2 (Importar)</summary>
+                <summary>🛰️ Importar RS2</summary>
                 <div class="section-body">
                     <input type="file" id="csvFile" accept=".csv">
                     <button onclick="importCSV()">CARGAR CSV</button>
@@ -72,8 +71,8 @@
             </details>
 
             <div class="export-group">
-                <button class="btn-csv" onclick="exportToCSV()">💾 EXPORTAR CSV (Puntos)</button>
-                <button class="btn-kml" onclick="exportToKML()">📦 EXPORTAR KML (Todo)</button>
+                <button class="btn-csv" onclick="exportToCSV()">💾 EXPORTAR CSV</button>
+                <button style="background: #e67e22;" onclick="exportToKML()">📦 EXPORTAR KML</button>
             </div>
         </div>
     </aside>
@@ -96,8 +95,8 @@
         map.pm.addControls({ position: 'topleft', drawMarker: true, drawPolygon: true, removalMode: true });
 
         let selectingFor = null;
-        let pointA = null;
-        let pointB = null;
+        let objA = null; // Guardamos el objeto completo para acceder a su altura
+        let objB = null;
 
         function startSelection(target) {
             selectingFor = target;
@@ -106,12 +105,12 @@
             document.getElementById('btn' + target).classList.add('active');
         }
 
-        function assignPoint(latlng, name) {
+        function assignPoint(layer, name) {
             if (selectingFor === 'A') {
-                pointA = latlng;
+                objA = layer;
                 document.getElementById('labelA').innerText = `A: ${name}`;
             } else {
-                pointB = latlng;
+                objB = layer;
                 document.getElementById('labelB').innerText = `B: ${name}`;
             }
             document.getElementById('btn' + selectingFor).classList.remove('active');
@@ -122,16 +121,17 @@
             layer.on('click', function(e) {
                 if (selectingFor) {
                     L.DomEvent.stopPropagation(e);
-                    assignPoint(e.target.getLatLng(), name);
+                    assignPoint(e.target, name);
                 }
             });
         }
 
         map.on('pm:create', (e) => {
             drawnItems.addLayer(e.layer);
-            const name = e.shape === 'Marker' ? `Punto_${Math.floor(Math.random()*1000)}` : `Dibujo_${e.shape}`;
+            const name = e.shape === 'Marker' ? `Punto_${Math.floor(Math.random()*1000)}` : `Poligono`;
+            e.layer.options.name = name;
+            e.layer.options.elevation = 0; // Por defecto para dibujos manuales
             makeSelectable(e.layer, name);
-            if(e.shape === 'Marker') e.layer.options.name = name; // Guardamos el nombre para el CSV
         });
 
         function importCSV() {
@@ -141,68 +141,80 @@
             reader.onload = function(e) {
                 const lines = e.target.result.split('\n');
                 const headers = lines[0].toLowerCase().split(',');
-                const idx = { lat: headers.indexOf('latitude'), lng: headers.indexOf('longitude'), name: headers.indexOf('name') };
+                
+                // Mapeo dinámico de columnas
+                const idx = {
+                    lat: headers.indexOf('latitude'),
+                    lng: headers.indexOf('longitude'),
+                    name: headers.indexOf('name'),
+                    alt: headers.indexOf('ellipsoidal height')
+                };
                 
                 lines.slice(1).forEach(line => {
                     const col = line.split(',');
                     if (col.length < 3) return;
                     const lat = parseFloat(col[idx.lat]), lng = parseFloat(col[idx.lng]);
-                    const pName = (col[idx.name] || 'Punto_RS2').trim();
-                    if (!isNaN(lat)) {
+                    const name = (col[idx.name] || 'Pt').trim();
+                    const alt = parseFloat(col[idx.alt]) || 0;
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
                         const m = L.circleMarker([lat, lng], { radius: 5, fillColor: '#2ecc71', color: '#fff', weight: 1, fillOpacity: 1 }).addTo(emlidLayer);
-                        m.options.name = pName; // Metadata para exportar
-                        m.bindPopup("Pt: " + pName);
-                        makeSelectable(m, pName);
+                        m.options.name = name;
+                        m.options.elevation = alt;
+                        m.bindPopup(`Pt: ${name}<br>Alt: ${alt}m`);
+                        makeSelectable(m, name);
                     }
                 });
-                map.fitBounds(emlidLayer.getBounds());
+                if(emlidLayer.getLayers().length > 0) map.fitBounds(emlidLayer.getBounds());
             };
             reader.readAsText(fileInput.files[0]);
         }
 
         function calculatePointC() {
-            if (!pointA || !pointB) return alert("Selecciona A y B primero.");
+            if (!objA || !objB) return alert("Selecciona A y B primero.");
+            const pA = objA.getLatLng();
+            const pB = objB.getLatLng();
             const dist = parseFloat(document.getElementById('distX').value);
-            const bearing = turf.bearing(turf.point([pointA.lng, pointA.lat]), turf.point([pointB.lng, pointB.lat]));
-            const dest = turf.destination(turf.point([pointA.lng, pointA.lat]), dist / 1000, bearing, {units: 'kilometers'});
+            
+            const bearing = turf.bearing(turf.point([pA.lng, pA.lat]), turf.point([pB.lng, pB.lat]));
+            const dest = turf.destination(turf.point([pA.lng, pA.lat]), dist / 1000, bearing, {units: 'kilometers'});
 
-            const nameC = `C_${dist}m_de_A`;
+            const nameC = `C_${dist}m`;
+            // Interpolamos una altura elipsoidal aproximada (promedio)
+            const altC = ((objA.options.elevation || 0) + (objB.options.elevation || 0)) / 2;
+
             const pC = L.circleMarker([dest.geometry.coordinates[1], dest.geometry.coordinates[0]], {
                 radius: 6, fillColor: '#f39c12', color: '#fff', weight: 2, fillOpacity: 1
             }).addTo(drawnItems);
             
             pC.options.name = nameC;
-            pC.bindPopup(`Punto C: ${dist}m de A`).openPopup();
+            pC.options.elevation = altC.toFixed(3);
+            pC.bindPopup(`Punto C<br>Dist: ${dist}m<br>Alt: ${altC.toFixed(3)}m`).openPopup();
             makeSelectable(pC, nameC);
         }
 
-        // --- NUEVA FUNCIÓN: EXPORTAR A CSV ---
         function exportToCSV() {
-            let csvRows = ["Name,Latitude,Longitude"];
+            // Cabecera exacta solicitada
+            let csvRows = ["Name,Longitude,Latitude,Ellipsoidal height"];
             
-            // Recorremos ambas capas buscando marcadores o circleMarkers (puntos)
-            const allLayers = [drawnItems, emlidLayer];
-            
-            allLayers.forEach(group => {
+            [drawnItems, emlidLayer].forEach(group => {
                 group.eachLayer(layer => {
-                    // Verificamos que sea un punto (Marker o CircleMarker)
                     if (layer.getLatLng) {
-                        const lat = layer.getLatLng().lat.toFixed(8);
+                        const name = layer.options.name || "SinNombre";
                         const lng = layer.getLatLng().lng.toFixed(8);
-                        const name = layer.options.name || "Sin_Nombre";
-                        csvRows.push(`${name},${lat},${lng}`);
+                        const lat = layer.getLatLng().lat.toFixed(8);
+                        const alt = layer.options.elevation || "0.000";
+                        csvRows.push(`${name},${lng},${lat},${alt}`);
                     }
                 });
             });
 
-            if (csvRows.length === 1) return alert("No hay puntos en el mapa para exportar.");
+            if (csvRows.length === 1) return alert("No hay puntos para exportar.");
 
-            const csvString = csvRows.join("\n");
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Puntos_GeoPoly_${new Date().getTime()}.csv`);
+            link.href = URL.createObjectURL(blob);
+            link.download = `Emlid_Export_${new Date().getTime()}.csv`;
             link.click();
         }
 
@@ -210,7 +222,7 @@
             const temp = new L.FeatureGroup([drawnItems, emlidLayer]);
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([tokml(temp.toGeoJSON())], { type: 'application/vnd.google-earth.kml+xml' }));
-            a.download = 'Relevamiento_GeoPoly.kml'; a.click();
+            a.download = 'Mapeo_GeoPoly.kml'; a.click();
         }
 
         map.on('mousemove', (e) => {
