@@ -3,135 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>GeoPoly Mission | P4P Fix</title>
+    <title>GeoPoly Tool | Guillermo Diaz</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --panel-width: 320px; }
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --panel-width: 300px;
+        }
+
         body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: var(--primary); color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; height: 50px; z-index: 1001; }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 0 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            z-index: 1001;
+        }
+
         .main-container { display: flex; flex: 1; position: relative; overflow: hidden; }
+
         #map { flex: 1; z-index: 1; }
-        .sidebar { width: var(--panel-width); background: #fff; border-left: 1px solid #ddd; padding: 15px; overflow-y: auto; z-index: 1000; }
-        .panel-section { margin-bottom: 15px; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fcfcfc; }
-        .grid-params { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        label { font-size: 0.7rem; color: #666; font-weight: bold; }
-        input, select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; }
-        .btn { border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; color: white; }
-        .btn-calc { background: var(--accent); }
-        .btn-export { background: var(--success); }
-        .coords-bar { background: #fff; border-top: 1px solid #ccc; padding: 5px 15px; font-size: 0.75rem; height: 20px; display: flex; justify-content: space-between; }
+
+        /* Panel Lateral */
+        .sidebar {
+            width: var(--panel-width);
+            background: #f8f9fa;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .panel-section { margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 0.9rem; text-transform: uppercase; }
+
+        /* Botones y Selectores */
+        .custom-select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        .btn-export {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-export:hover { background: #219150; }
+
+        /* Barra de Coordenadas (Footer) */
+        .coords-bar {
+            background: #fff;
+            border-top: 1px solid #ccc;
+            padding: 5px 15px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            height: 25px;
+            align-items: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { 
+                width: 100%; 
+                height: auto; 
+                border-left: none; 
+                border-top: 1px solid #ddd; 
+                padding: 10px;
+                order: 2;
+            }
+            #map { order: 1; }
+            .panel-section { margin-bottom: 5px; padding: 10px; }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <div><strong>GeoPoly Mission</strong> <small>P4P v1.2.1</small></div>
-        <div style="font-size: 0.8rem;">Guillermo Diaz</div>
+        <div style="font-weight: bold; font-size: 1.1rem;">GeoPoly Tool <small>v1.1</small></div>
+        <div style="font-size: 0.8rem; text-align: right;">Guillermo Diaz | 2026</div>
     </header>
 
     <div class="main-container">
         <div id="map"></div>
+
         <aside class="sidebar">
             <div class="panel-section">
-                <h4>Parámetros de Vuelo</h4>
-                <div class="grid-params">
-                    <div><label>Altura (m)</label><input type="number" id="altVuelo" value="80"></div>
-                    <div><label>Traslape Lat %</label><input type="number" id="overLat" value="70"></div>
-                    <div><label>Ángulo (°)</label><input type="number" id="angle" value="0"></div>
-                    <div><label>Doble Grid</label>
-                        <select id="doubleGrid"><option value="no">No</option><option value="yes">Sí</option></select>
-                    </div>
-                </div>
-                <button class="btn btn-calc" onclick="generateMission()">CALCULAR LÍNEAS</button>
-                <button class="btn btn-export" onclick="exportToKML()">DESCARGAR KML</button>
+                <h4>Capa Base</h4>
+                <select id="layerSelect" class="custom-select" onchange="changeLayer(this.value)">
+                    <option value="satelite">Satélite (Esri)</option>
+                    <option value="callejero">Callejero (OSM)</option>
+                    <option value="relieve">Relieve</option>
+                </select>
+                
+                <button class="btn-export" onclick="exportToKML()">EXPORTAR KML (WGS84)</button>
             </div>
+
             <div class="panel-section">
-                <div id="gsdText">GSD: -- cm/px</div>
-                <div id="status-msg" style="color:red; font-size: 0.8rem; margin-top:5px;">Dibuja un polígono para empezar</div>
+                <h4>Instrucciones</h4>
+                <p style="font-size: 0.8rem; color: #666;">
+                    1. Use los iconos de la izquierda para dibujar.<br>
+                    2. Haga clic en los puntos para editar.<br>
+                    3. Exporte para usar en Google Earth/QGIS.
+                </p>
+                <a href="https://github.com" style="font-size: 0.7rem; color: var(--accent);">Ver Repo en GitHub</a>
             </div>
         </aside>
     </div>
 
     <div class="coords-bar">
-        <div id="mouse-coords">0.000, 0.000</div>
+        <div id="mouse-coords">Lat: 0.000000 | Lng: 0.000000</div>
+        <div id="status-msg" style="color: var(--accent);">Listo</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
     <script src="https://unpkg.com/tokml/tokml.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
     <script>
-        const P4P = { sensorW: 13.2, focal: 8.8, imageW: 5472 };
-        const map = L.map('map').setView([-32.95, -60.75], 16);
-        
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+        // 1. Configuración de capas
+        const baseLayers = {
+            callejero: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }),
+            satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
+            relieve: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' })
+        };
 
-        const drawnItems = new L.FeatureGroup().addTo(map);
-        const missionLayer = new L.FeatureGroup().addTo(map);
+        const map = L.map('map', {
+            center: [-32.95, -60.75], 
+            zoom: 13,
+            layers: [baseLayers.satelite],
+            zoomControl: false // Lo moveremos para que no estorbe
+        });
 
-        map.pm.addControls({ position: 'topleft', drawMarker: true, drawPolygon: true, removalMode: true });
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        function changeLayer(type) {
+            Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+            baseLayers[type].addTo(map);
+        }
+
+        // 2. Herramientas de dibujo (Geoman)
+        map.pm.addControls({
+            position: 'topleft',
+            drawCircleMarker: false,
+            drawText: false,
+            cutLayer: false,
+            rotateMode: true, // Útil para ingenieros
+        });
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
 
         map.on('pm:create', (e) => {
-            if (e.shape === 'Polygon') {
-                drawnItems.clearLayers();
-                drawnItems.addLayer(e.layer);
-                document.getElementById('status-msg').innerText = "Polígono detectado. Pulse Calcular.";
-                document.getElementById('status-msg').style.color = "green";
+            const layer = e.layer;
+            drawnItems.addLayer(layer);
+            document.getElementById('status-msg').innerText = "Figura creada";
+            
+            // Si es polígono, calcular área básica
+            if (layer instanceof L.Polygon) {
+                layer.on('click', () => {
+                    const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                    document.getElementById('status-msg').innerText = `Área: ${(area/10000).toFixed(4)} ha`;
+                });
             }
         });
 
-        function generateMission() {
-            missionLayer.clearLayers();
-            const polyLayer = drawnItems.getLayers().find(l => l instanceof L.Polygon);
-            
-            if (!polyLayer) {
-                alert("Primero dibuja un polígono en el mapa.");
+        // 3. Seguimiento de Coordenadas
+        const coordDiv = document.getElementById('mouse-coords');
+        map.on('mousemove', (e) => {
+            coordDiv.innerText = `Lat: ${e.latlng.lat.toFixed(6)} | Lng: ${e.latlng.lng.toFixed(6)}`;
+        });
+
+        // 4. Exportar
+        function exportToKML() {
+            const data = drawnItems.toGeoJSON();
+            if (data.features.length === 0) {
+                alert("No hay polígonos para exportar.");
                 return;
             }
-
-            const h = parseFloat(document.getElementById('altVuelo').value);
-            const sideOver = parseFloat(document.getElementById('overLat').value) / 100;
-            const angle = parseFloat(document.getElementById('angle').value);
-
-            // GSD y Espaciado
-            const gsd = (h * P4P.sensorW) / (P4P.focal * P4P.imageW) * 100;
-            const footprintW = (h * P4P.sensorW) / P4P.focal;
-            const lineSpacing = footprintW * (1 - sideOver);
-            
-            document.getElementById('gsdText').innerText = `GSD: ${gsd.toFixed(2)} cm/px | Espaciado: ${lineSpacing.toFixed(1)}m`;
-
-            // Crear Grid con Turf
-            const polyGeoJSON = polyLayer.toGeoJSON();
-            const bbox = turf.bbox(polyGeoJSON);
-            
-            function createGrid(ang) {
-                const grid = turf.lineGrid(bbox, lineSpacing / 1000, { units: 'kilometers', mask: polyGeoJSON, angle: ang });
-                L.geoJSON(grid, { style: { color: ang === angle ? '#ffff00' : '#00ffff', weight: 3 } }).addTo(missionLayer);
-            }
-
-            createGrid(angle);
-            if (document.getElementById('doubleGrid').value === 'yes') createGrid(angle + 90);
-
-            document.getElementById('status-msg').innerText = "Misión calculada correctamente.";
-        }
-
-        function exportToKML() {
-            const data = missionLayer.toGeoJSON();
-            if (data.features.length === 0) return alert("No hay líneas calculadas.");
             const kml = tokml(data);
             const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'Mision_P4P.kml'; a.click();
+            a.href = url;
+            a.download = `GeoPoly_Export_${new Date().getTime()}.kml`;
+            a.click();
+            document.getElementById('status-msg').innerText = "KML Generado";
         }
 
-        map.on('mousemove', (e) => {
-            document.getElementById('mouse-coords').innerText = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        });
+        // Fix para móviles: ajustar tamaño al rotar
+        window.addEventListener('resize', () => map.invalidateSize());
     </script>
 </body>
 </html>
