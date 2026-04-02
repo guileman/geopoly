@@ -2,64 +2,61 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>GeoPoly Tool v1.9 | POSGAR 07 Precision</title>
+    <title>GeoPoly Tool v2.0 | POSGAR 07 & Google HD</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --selection: #f39c12; }
         body { margin: 0; display: flex; height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
         
-        /* Sidebar Estilizada y Compacta */
-        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
+        .sidebar { width: 280px; background: var(--primary); color: white; display: flex; flex-direction: column; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
         .sidebar-header { padding: 15px; background: #2c3e50; border-bottom: 1px solid #34495e; text-align: center; }
-        .sidebar-header h1 { margin: 0; font-size: 1rem; }
-        .sidebar-header p { margin: 0; font-size: 0.6rem; opacity: 0.6; }
-
         .content { flex: 1; overflow-y: auto; padding: 10px; }
         
         details { background: #2c3e50; margin-bottom: 8px; border-radius: 4px; border: 1px solid #34495e; }
         summary { padding: 8px; font-size: 0.7rem; font-weight: bold; cursor: pointer; background: #34495e; text-transform: uppercase; list-style: none; }
-        summary:hover { background: #3d566e; }
         .section-body { padding: 10px; }
         
         label { display: block; font-size: 0.65rem; margin-bottom: 4px; color: #95a5a6; }
         input, select, button { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 3px; border: none; font-size: 0.8rem; box-sizing: border-box; }
         
-        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        button:hover { opacity: 0.9; }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { filter: brightness(1.1); }
         
-        /* Estilos específicos para selección A-B */
         .btn-select.active { background: var(--selection); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
         
-        .point-confirm-label { font-size: 0.7rem; color: #bdc3c7; background: #1a252f; padding: 5px; border-radius: 3px; margin-top: -5px; margin-bottom: 10px; min-height: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .point-confirm-label { font-size: 0.7rem; color: #f1c40f; background: #1a252f; padding: 5px; border-radius: 3px; margin-top: -5px; margin-bottom: 10px; min-height: 15px; display: block; }
 
-        /* Estilo de Etiquetas en Mapa - SUTIL SIN RECUADRO */
+        /* ETIQUETAS SUTILES SIN RECUADRO */
         .point-label-subtle {
             color: white;
             font-size: 11px;
             font-weight: bold;
             text-align: center;
-            text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000; /* Borde de texto para legibilidad */
+            text-shadow: 1px 1px 2px #000, -1px 1px 2px #000, 1px -1px 2px #000, -1px -1px 2px #000;
             white-space: nowrap;
         }
 
-        #map { flex: 1; position: relative; }
-        .coords-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.7rem; z-index: 1000; line-height: 1.4; pointer-events: none; }
+        #map { flex: 1; position: relative; cursor: crosshair; }
+        .coords-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.85); color: white; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.7rem; z-index: 1000; line-height: 1.5; pointer-events: none; border: 1px solid #34495e; }
+        
+        /* Ajuste selector de capas Leaflet */
+        .leaflet-control-layers { font-size: 11px !important; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1>GeoPoly Tool <small>v1.9</small></h1>
-            <p>Por Guillermo Diaz</p>
+            <h1 style="margin:0; font-size: 1.1rem;">GeoPoly Tool <small>v2.0</small></h1>
+            <p style="margin:0; opacity: 0.7; font-size: 0.6rem;">Precisión POSGAR 2007 - Emlid Flow</p>
         </div>
         
         <div class="content">
             <details open>
-                <summary>🌐 Proyección POSGAR 2007</summary>
+                <summary>🌐 Configuración POSGAR 2007</summary>
                 <div class="section-body">
-                    <label>Selector de Faja Gauss-Krüger:</label>
+                    <label>Faja Gauss-Krüger (Argentina):</label>
                     <select id="fajaSelector" onchange="updateProjection()">
                         <option value="1">Faja 1 (Meridiano -72°)</option>
                         <option value="2">Faja 2 (Meridiano -69°)</option>
@@ -73,22 +70,22 @@
             </details>
 
             <details open>
-                <summary>📐 Geometría de Campo</summary>
+                <summary>📐 Operaciones de Campo</summary>
                 <div class="section-body">
                     <button id="btnA" class="btn-select" onclick="startSelection('A')">DESIGNAR PUNTO A</button>
-                    <span id="labelA" class="point-confirm-label">A: No seleccionado</span>
+                    <span id="labelA" class="point-confirm-label">A: (Esperando selección...)</span>
                     
                     <button id="btnB" class="btn-select" onclick="startSelection('B')">DESIGNAR PUNTO B</button>
-                    <span id="labelB" class="point-confirm-label">B: No seleccionado</span>
+                    <span id="labelB" class="point-confirm-label">B: (Esperando selección...)</span>
                     
-                    <label>Distancia a proyectar desde A (m):</label>
+                    <label>Distancia a proyectar (m):</label>
                     <input type="number" id="distX" value="10.000" step="0.001">
-                    <button style="background: var(--success);" onclick="calculatePointC()">GENERAR PUNTO C</button>
+                    <button style="background: var(--success);" onclick="calculatePointC()">CALCULAR PUNTO C</button>
                 </div>
             </details>
 
             <details>
-                <summary>📂 Archivos (Emlid Flow CSV)</summary>
+                <summary>📂 Datos Emlid Flow (CSV)</summary>
                 <div class="section-body">
                     <input type="file" id="csvFile" accept=".csv">
                     <button onclick="importCSV()">CARGAR PUNTOS RS2</button>
@@ -97,7 +94,7 @@
 
             <div style="padding: 10px; border-top: 1px solid #34495e;">
                 <button style="background: #9b59b6; margin-bottom: 5px;" onclick="exportToCSV()">💾 EXPORTAR CSV (RS2)</button>
-                <button style="background: #e67e22;" onclick="exportToKML()">📦 EXPORTAR KML (Todo)</button>
+                <button style="background: #e67e22;" onclick="exportToKML()">📦 EXPORTAR KML (Google Earth)</button>
             </div>
         </div>
     </aside>
@@ -114,7 +111,32 @@
     <script src="https://unpkg.com/tokml/tokml.js"></script>
 
     <script>
-        // --- INICIALIZACIÓN DE PROYECCIÓN ---
+        // 1. Configuración de Mapas y Zoom
+        const esriLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 21,
+            attribution: 'Esri World Imagery'
+        });
+
+        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            attribution: 'Google Hybrid'
+        });
+
+        const map = L.map('map', { 
+            center: [-32.95, -60.75], 
+            zoom: 18, 
+            zoomControl: false, 
+            maxZoom: 22,
+            layers: [googleHybrid] 
+        });
+
+        const baseMaps = {
+            "Google Hybrid (Zoom 22)": googleHybrid,
+            "Esri Satellite (Zoom 21)": esriLayer
+        };
+        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+        // 2. Proyecciones POSGAR
         let currentFajaDef = "";
         const wgs84 = "EPSG:4326";
 
@@ -122,37 +144,27 @@
             const faja = document.getElementById('fajaSelector').value;
             const meridiano = -72 + (faja - 1) * 3;
             const falsoEste = faja * 1000000 + 500000;
-            
-            // Definición oficial POSGAR 2007 para la faja seleccionada
             currentFajaDef = `+proj=tmerc +lat_0=-90 +lon_0=${meridiano} +k=1 +x_0=${falsoEste} +y_0=0 +ellps=WGS84 +units=m +no_defs`;
         }
-        updateProjection(); // Inicializar faja por defecto
+        updateProjection();
 
-        // --- INICIALIZACIÓN DEL MAPA CON MÁS ZOOM (MAX 21) ---
-        const map = L.map('map', { center: [-32.95, -60.75], zoom: 17, zoomControl: false, maxZoom: 21 });
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 21, // Permitir zoom extra para precisión
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(map);
-        
+        // 3. Capas y Estado
         const emlidLayer = new L.FeatureGroup().addTo(map);
         const drawnItems = new L.FeatureGroup().addTo(map);
-        const labelLayer = new L.LayerGroup().addTo(map); // Capa para etiquetas sutiles
-
+        const labelLayer = new L.LayerGroup().addTo(map);
         let selectingFor = null, objA = null, objB = null;
 
-        // --- FUNCIONES DE ETIQUETA SUTIL ---
+        // 4. Funciones Auxiliares
         function createSubtleLabel(latlng, text) {
             const labelIcon = L.divIcon({
                 className: 'custom-subtle-label',
                 html: `<div class="point-label-subtle">${text}</div>`,
                 iconSize: [120, 20],
-                iconAnchor: [60, -8] // Desplazamiento hacia abajo del punto
+                iconAnchor: [60, -10]
             });
             return L.marker(latlng, { icon: labelIcon, interactive: false }).addTo(labelLayer);
         }
 
-        // --- LÓGICA DE SELECCIÓN DE PUNTOS INTERACTIVA ---
         function startSelection(target) {
             selectingFor = target;
             document.querySelectorAll('.btn-select').forEach(b => b.classList.remove('active'));
@@ -174,47 +186,41 @@
         function makeSelectable(layer, name) {
             layer.on('click', (e) => { 
                 if (selectingFor) { 
-                    L.DomEvent.stopPropagation(e); // Evitar que el clic pase al mapa
+                    L.DomEvent.stopPropagation(e);
                     assignPoint(e.target, name); 
                 } 
             });
         }
 
-        // --- CÁLCULO DE PRECISIÓN POSGAR DEL PUNTO C ---
+        // 5. Cálculo POSGAR 07
         function calculatePointC() {
-            if (!objA || !objB) return alert("Designa puntos A y B primero.");
+            if (!objA || !objB) return alert("Designa A y B.");
             const pA = objA.getLatLng(), pB = objB.getLatLng();
-            const distC = parseFloat(document.getElementById('distX').value);
+            const dC = parseFloat(document.getElementById('distX').value);
 
-            // Transformar a plano POSGAR de la faja seleccionada
             const posA = proj4(wgs84, currentFajaDef, [pA.lng, pA.lat]);
             const posB = proj4(wgs84, currentFajaDef, [pB.lng, pB.lat]);
 
-            // Vector AB en metros planos
             const dx = posB[0] - posA[0], dy = posB[1] - posA[1];
-            const distAB = Math.sqrt(dx*dx + dy*dy);
-            
-            // Proyección lineal de C
-            const posC = [posA[0] + (dx/distAB)*distC, posA[1] + (dy/distAB)*distC];
+            const dAB = Math.sqrt(dx*dx + dy*dy);
+            const posC = [posA[0] + (dx/dAB)*dC, posA[1] + (dy/dAB)*dC];
 
-            // Transformar de vuelta a geográficas WGS84 para el mapa web
             const wgsC = proj4(currentFajaDef, wgs84, posC);
             const latlngC = [wgsC[1], wgsC[0]];
-            const nameC = `C_${distC}m_de_A`;
+            const nameC = `C_${dC}m`;
 
-            // Crear Punto C en mapa
             const pC = L.circleMarker(latlngC, { radius: 6, fillColor: '#f39c12', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(drawnItems);
             pC.options.name = nameC;
-            pC.options.elevation = ((objA.options.elevation || 0) + (objB.options.elevation || 0)) / 2; // Interpolación básica de altura
+            pC.options.elevation = ((objA.options.elevation || 0) + (objB.options.elevation || 0)) / 2;
             
             createSubtleLabel(latlngC, nameC);
             makeSelectable(pC, nameC);
         }
 
-        // --- IMPORTACIÓN / EXPORTACIÓN DE ARCHIVOS CSV EMLID FLOW ---
+        // 6. CSV y KML
         function importCSV() {
             const fileInput = document.getElementById('csvFile');
-            if (!fileInput.files[0]) return alert("Selecciona un archivo CSV.");
+            if (!fileInput.files[0]) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const lines = e.target.result.split('\n');
@@ -224,7 +230,7 @@
                 lines.slice(1).forEach(line => {
                     const c = line.split(','); if (c.length < 3) return;
                     const lat = parseFloat(c[idx.lat]), lng = parseFloat(c[idx.lng]);
-                    const name = (c[idx.name] || "Pt_Unk").trim();
+                    const name = (c[idx.name] || "Pt").trim();
                     if (!isNaN(lat)) {
                         const m = L.circleMarker([lat, lng], { radius: 5, fillColor: '#2ecc71', color: '#fff', weight: 1, fillOpacity: 1 }).addTo(emlidLayer);
                         m.options.name = name;
@@ -239,34 +245,30 @@
         }
 
         function exportToCSV() {
-            // FORMATO REQUERIDO POR EMLID: Name, Longitude, Latitude, Ellipsoidal height
             let csv = ["Name,Longitude,Latitude,Ellipsoidal height"];
             [drawnItems, emlidLayer].forEach(g => g.eachLayer(l => {
                 if (l.getLatLng && l.options.name) {
                     csv.push(`${l.options.name},${l.getLatLng().lng.toFixed(8)},${l.getLatLng().lat.toFixed(8)},${(l.options.elevation || 0).toFixed(3)}`);
                 }
             }));
-            const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `GeoPoly_Faja${document.getElementById('fajaSelector').value}_${new Date().getTime()}.csv`;
-            a.click();
+            a.href = URL.createObjectURL(new Blob([csv.join("\n")], { type: 'text/csv' }));
+            a.download = `GeoPoly_Export_F${document.getElementById('fajaSelector').value}.csv`; a.click();
         }
 
         function exportToKML() {
             const temp = new L.FeatureGroup([drawnItems, emlidLayer]);
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([tokml(temp.toGeoJSON())], { type: 'application/vnd.google-earth.kml+xml' }));
-            a.download = 'GeoPoly_KML.kml'; a.click();
+            a.download = 'GeoPoly_Export.kml'; a.click();
         }
 
-        // --- EVENTOS DE RATÓN: COORDENADAS EN TIEMPO REAL ---
+        // 7. Evento Mouse
         map.on('mousemove', (e) => {
             const p = proj4(wgs84, currentFajaDef, [e.latlng.lng, e.latlng.lat]);
-            const faja = document.getElementById('fajaSelector').value;
             document.getElementById('mouse-coords').innerHTML = 
                 `WGS84: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}<br>` +
-                `<span style="color: #3498db;">POSGAR F${faja}: X=${p[0].toFixed(3)} Y=${p[1].toFixed(3)}</span>`;
+                `<span style="color: #3498db;">POSGAR F${document.getElementById('fajaSelector').value}: X=${p[0].toFixed(3)} Y=${p[1].toFixed(3)}</span>`;
         });
     </script>
 </body>
